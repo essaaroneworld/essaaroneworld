@@ -329,7 +329,7 @@ def group_summary(conn, company_id, group_id, date_from=None, date_to=None):
     if int(group_id) not in chart.groups:
         raise NotFound("Group not found")
     bal = ledger_balances(conn, company_id, frm, to, chart)
-    node = _group_node(chart, int(group_id), bal, include_zero=True)
+    node = _group_node(chart, int(group_id), bal)
     return {"from": frm, "to": to, "group": _to_rupees_tree(node)}
 
 
@@ -649,6 +649,34 @@ def bank_reconciliation(conn, company_id, ledger_id, date_to=None):
             "balance_as_per_bank": _r(bal["closing"] - unreconciled), "rows": rows}
 
 
+def cheque_register(conn, company_id, date_from=None, date_to=None):
+    """Instruments (cheques / UTR references) issued and received through bank ledgers."""
+    company = get_company(conn, company_id)
+    frm, to = period(company, date_from, date_to)
+    chart = Chart(conn, company_id)
+    rows = []
+    for r in conn.execute(
+            """SELECT e.id, e.ledger_id, e.amount, e.instrument_no, e.instrument_date, e.bank_date, v.id AS vid,
+                      v.date, v.number, t.name AS vtype, l.name AS bank
+               FROM voucher_entries e JOIN vouchers v ON v.id=e.voucher_id
+               JOIN voucher_types t ON t.id=v.voucher_type_id JOIN ledgers l ON l.id=e.ledger_id
+               WHERE v.company_id=? AND v.date BETWEEN ? AND ? AND e.instrument_no IS NOT NULL
+                     AND t.base_type NOT IN ('Memorandum')
+               ORDER BY l.name, v.date, v.id""", (company_id, frm, to)):
+        if not chart.is_cash_or_bank(r["ledger_id"]):
+            continue
+        other = conn.execute("SELECT l.name FROM voucher_entries e JOIN ledgers l ON l.id=e.ledger_id "
+                             "WHERE e.voucher_id=? AND e.ledger_id != ? ORDER BY e.line_no LIMIT 1",
+                             (r["vid"], r["ledger_id"])).fetchone()
+        rows.append({"voucher_id": r["vid"], "entry_id": r["id"], "bank": r["bank"], "date": r["date"],
+                     "voucher_type": r["vtype"], "number": r["number"], "instrument_no": r["instrument_no"],
+                     "instrument_date": r["instrument_date"], "party": other["name"] if other else "",
+                     "issued": _r(-r["amount"]) if r["amount"] < 0 else 0,
+                     "received": _r(r["amount"]) if r["amount"] > 0 else 0,
+                     "status": "Cleared" if r["bank_date"] else "Pending", "bank_date": r["bank_date"]})
+    return {"from": frm, "to": to, "rows": rows}
+
+
 # ---------------------------------------------------------------- ratios & dashboard
 
 def _group_closing(b, name):
@@ -740,6 +768,7 @@ REPORTS = {
     "outstanding": lambda c, cid, q: outstanding(c, cid, q.get("kind", "receivable"), q.get("to")),
     "gst": lambda c, cid, q: gst_report(c, cid, q.get("from"), q.get("to")),
     "bank-reconciliation": lambda c, cid, q: bank_reconciliation(c, cid, _need(q, "ledger_id"), q.get("to")),
+    "cheque-register": lambda c, cid, q: cheque_register(c, cid, q.get("from"), q.get("to")),
     "ratios": lambda c, cid, q: ratios(c, cid, q.get("from"), q.get("to")),
     "dashboard": lambda c, cid, q: dashboard(c, cid, q.get("from"), q.get("to")),
 }

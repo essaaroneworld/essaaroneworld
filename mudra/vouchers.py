@@ -18,7 +18,7 @@ from . import audit
 from .chart import Chart
 from .errors import NotFound, ValidationError
 from .gst import INVOICE_TYPES, PURCHASE_LIKE, SALES_LIKE, build_invoice
-from .masters import get_company, parse_date
+from .masters import _next_number, get_company, parse_date
 from .money import to_paise, to_qty, to_rupees
 
 REF_TYPES = ("New Ref", "Agst Ref", "Advance", "On Account")
@@ -166,12 +166,6 @@ def _check_type_rules(chart, base_type, entries, inventory):
     if base_type == "Journal" and any(cash):
         raise ValidationError("Cash and Bank ledgers are not allowed in a Journal voucher; "
                               "use Payment, Receipt or Contra")
-
-
-def _next_number(conn, vt_id):
-    nums = [r[0] for r in conn.execute("SELECT number FROM vouchers WHERE voucher_type_id=?", (vt_id,))]
-    top = max([int(n) for n in nums if str(n).isdigit()] or [0])
-    return str(top + 1)
 
 
 def save_voucher(conn, company_id, data, voucher_id=None):

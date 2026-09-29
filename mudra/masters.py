@@ -400,9 +400,14 @@ def delete_ledger(conn, company_id, ledger_id):
 
 # ---------------------------------------------------------------- voucher types
 
+def _next_number(conn, vt_id):
+    nums = [r[0] for r in conn.execute("SELECT number FROM vouchers WHERE voucher_type_id=?", (vt_id,))]
+    return str(max([int(n) for n in nums if str(n).isdigit()] or [0]) + 1)
+
+
 def list_voucher_types(conn, company_id):
-    return [dict(r) | {"is_predefined": bool(r["is_predefined"])} for r in conn.execute(
-        "SELECT * FROM voucher_types WHERE company_id = ? ORDER BY id", (company_id,))]
+    return [dict(r) | {"is_predefined": bool(r["is_predefined"]), "next_number": _next_number(conn, r["id"])}
+            for r in conn.execute("SELECT * FROM voucher_types WHERE company_id = ? ORDER BY id", (company_id,))]
 
 
 def get_voucher_type(conn, company_id, vt_id):

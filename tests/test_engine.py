@@ -267,6 +267,24 @@ class FinancialStatementsTest(unittest.TestCase):
         self.assertEqual(tb["total_dr"], tb["total_cr"])
         self.assertEqual(bs["total_assets"], bs["total_liabilities"])
 
+    def test_cheque_register_and_next_number(self):
+        with self.db.read() as conn:
+            reg = reports.cheque_register(conn, self.cid)
+            types = {t["name"]: t for t in masters.list_voucher_types(conn, self.cid)}
+        self.assertTrue(all(r["instrument_no"] for r in reg["rows"]))
+        self.assertIn("000452", [r["instrument_no"] for r in reg["rows"]])
+        self.assertEqual(types["Sales"]["next_number"], "4")
+
+    def test_group_summary_hides_empty_subgroups(self):
+        with self.db.read() as conn:
+            g = {x["name"]: x["id"] for x in masters.list_groups(conn, self.cid)}
+            gs = reports.group_summary(conn, self.cid, g["Capital Account"])
+        self.assertEqual([c["name"] for c in gs["group"]["children"]], ["Capital - Aarav Mehta"])
+
+    def test_books_from_cannot_move_past_vouchers(self):
+        with self.db.tx() as conn, self.assertRaises(ValidationError):
+            masters.update_company(conn, self.cid, {"books_from": "2099-01-01", "fy_start": "2099-01-01"})
+
 
 if __name__ == "__main__":
     unittest.main()
