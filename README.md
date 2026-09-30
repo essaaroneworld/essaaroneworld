@@ -1,5 +1,8 @@
 # Mudra Finance and Banking Software
 
+> **Also in this repository:** [`pw-exam/`](pw-exam/README.md) — **PW Batch Online Examination System**
+> (ESS AAR SOFTEK PLC), a proctored online/LAN/mobile exam platform. See its own README.
+
 **Mudra** (मुद्रा, "currency") is keyboard-first accounting, inventory, GST and
 banking software for Indian businesses. It is modelled on the architecture
 that made Tally the standard for Indian bookkeeping: 28 predefined account

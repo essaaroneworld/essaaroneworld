@@ -89,7 +89,7 @@ export function h(tag, attrs, ...children) {
     if (r[0] === '.') node.classList.add(r.slice(1));
     else if (r[0] === '#') node.id = r.slice(1);
   }
-  if (attrs && (typeof attrs !== 'object' || attrs instanceof Node || Array.isArray(attrs))) {
+  if (attrs !== null && attrs !== undefined && (typeof attrs !== 'object' || attrs instanceof Node || Array.isArray(attrs))) {
     children.unshift(attrs);
     attrs = null;
   }

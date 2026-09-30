@@ -1,0 +1,6 @@
+data/
+*.db
+*.db-*
+secret.key
+.env
+__pycache__/

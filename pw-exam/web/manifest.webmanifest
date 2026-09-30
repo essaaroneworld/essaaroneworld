@@ -1,0 +1,14 @@
+{
+  "name": "PW Batch Online Examination System",
+  "short_name": "PW Exam",
+  "description": "Secure online examinations — a product of ESS AAR SOFTEK PLC",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f6fb",
+  "theme_color": "#1e2a5a",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
