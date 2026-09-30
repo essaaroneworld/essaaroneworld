@@ -1,0 +1,37 @@
+# Online VPS deployment with automatic HTTPS (Let's Encrypt via Caddy).
+#   1. Point your domain's DNS A record at the VPS.
+#   2. cp deploy/env.example .env   and edit it.
+#   3. docker compose up -d --build
+services:
+  pwexam:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PWEXAM_TRUST_PROXY: "1"
+      PWEXAM_BASE_URL: https://${PWEXAM_DOMAIN:?set PWEXAM_DOMAIN in .env}
+    volumes:
+      - pwexam-data:/data
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [pwexam]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PWEXAM_DOMAIN: ${PWEXAM_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  pwexam-data:
+  caddy-data:
+  caddy-config:
